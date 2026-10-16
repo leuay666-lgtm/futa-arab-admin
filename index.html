@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>لوحة مراجعة الآدمن - Futa Arab</title>
+</head>
+<body class="bg-[#0b0c10] text-white min-h-screen p-4 pb-20 relative">
+
+    <!-- الشاشة الرئيسية للوحة التحكم -->
+    <div class="max-w-md mx-auto space-y-8 mt-10" id="mainAdminScreen">
+        <div class="bg-[#12141d] p-6 rounded-3xl border border-gray-800 shadow-2xl">
+            
+            <!-- الهيدر العلوي الجديد مع زر إدارة التاغات -->
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-black flex items-center gap-3 text-red-500">
+                    <i class="fas fa-shield-alt"></i>
+                    لوحة المراجعة
+                </h1>
+                
+                <!-- زر اختصار صفحة التاغات -->
+                <a href="tags.html" class="bg-purple-600/10 border border-purple-500/30 text-purple-400 hover:bg-purple-600 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-2">
+                    <i class="fas fa-tags"></i> إدارة التاغات
+                </a>
+            </div>
+
+            <div class="h-px w-full bg-gray-800 my-5"></div>
+
+            <h2 class="text-xl font-bold mb-4 text-orange-400">طلبات رفع جديدة</h2>
+           
+            <div id="pendingList" class="flex flex-col gap-4">
+                <div class="text-center text-gray-500 py-4 text-sm">جاري تحميل الطلبات...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة القراءة المخفية (تظهر عند الضغط على معاينة) -->
+    <div id="readerModal" class="fixed inset-0 bg-[#0b0c10] z-50 hidden overflow-y-auto">
+        <div class="sticky top-0 bg-[#12141d] border-b border-gray-800 p-4 flex justify-between items-center z-10">
+            <h2 id="readerTitle" class="font-bold text-lg truncate flex-1 ml-4 text-purple-400">عنوان المانغا</h2>
+            <button onclick="closeReader()" class="bg-gray-800 p-2 rounded-lg text-white hover:bg-gray-700 transition active:scale-95">
+                <i class="fas fa-times"></i> إغلاق
+            </button>
+        </div>
+        <!-- هنا ستظهر الصور الطولية -->
+        <div id="readerContent" class="max-w-md mx-auto flex flex-col items-center pb-10">
+            <!-- الصور سيتم حقنها هنا -->
+        </div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://vosnoijtrovgtvpxnzsr.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvc25vaWp0cm92Z3R2cHhuenNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMDI0MjUsImV4cCI6MjEwNzU3ODQyNX0.k9B4P5vOMqNKFzpALb2aZrajjeyeKFaJW5qJz0iTqS0';
+        let sbClient = null;
+
+        window.addEventListener('load', () => {
+            if (typeof supabase !== 'undefined') {
+                sbClient = supabase.createClient(supabaseUrl, supabaseKey);
+                loadPendingMangas();
+            }
+        });
+
+        async function loadPendingMangas() {
+            const listDiv = document.getElementById('pendingList');
+            try {
+                const { data, error } = await sbClient.from('mangas').select('*').eq('status', 'pending');
+                if (error) throw error;
+
+                if (data.length === 0) {
+                    listDiv.innerHTML = '<div class="text-center text-gray-500 py-6 bg-[#1a1c23] rounded-xl border border-gray-800">لا توجد طلبات معلقة حالياً</div>';
+                    return;
+                }
+
+                listDiv.innerHTML = '';
+                data.forEach(manga => {
+                    listDiv.innerHTML += `
+                        <div class="bg-[#1a1c23] p-3 rounded-xl border border-gray-700 flex flex-col gap-3">
+                            <div class="flex items-center gap-4">
+                                <img src="${manga.cover_image_url}" class="w-16 h-24 object-cover rounded-lg">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-sm text-white mb-1">${manga.title}</h3>
+                                    <span class="text-xs text-orange-400 bg-orange-900/30 px-2 py-1 rounded-md">قيد المراجعة</span>
+                                </div>
+                            </div>
+                           
+                            <!-- أزرار التحكم -->
+                            <div class="flex gap-2 w-full mt-2">
+                                <button onclick="viewPages('${manga.id}', '${manga.title}')" class="flex-1 bg-purple-600/20 text-purple-400 hover:bg-purple-600 hover:text-white py-2 rounded-lg text-xs font-bold transition active:scale-95">
+                                    <i class="fas fa-book-open"></i> معاينة
+                                </button>
+                                <button onclick="approveManga('${manga.id}')" class="flex-1 bg-green-600/20 text-green-400 hover:bg-green-600 hover:text-white py-2 rounded-lg text-xs font-bold transition active:scale-95">
+                                    ✅ قبول
+                                </button>
+                                <button onclick="rejectManga('${manga.id}')" class="flex-1 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white py-2 rounded-lg text-xs font-bold transition active:scale-95">
+                                    ❌ رفض
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (error) { alert("خطأ في الجلب: " + error.message); }
+        }
+
+        // دالة عرض الصفحات في نافذة القراءة
+        async function viewPages(mangaId, title) {
+            document.getElementById('readerTitle').innerText = title;
+            const contentDiv = document.getElementById('readerContent');
+            contentDiv.innerHTML = '<div class="text-purple-400 mt-10 font-bold"><i class="fas fa-spinner fa-spin text-2xl mb-2 block text-center"></i> جاري تحميل الصفحات...</div>';
+           
+            document.getElementById('mainAdminScreen').classList.add('hidden');
+            document.getElementById('readerModal').classList.remove('hidden');
+
+            try {
+                const { data, error } = await sbClient.from('manga_pages')
+                    .select('image_url')
+                    .eq('manga_id', mangaId)
+                    .order('page_number', { ascending: true });
+               
+                if (error) throw error;
+
+                if (data.length === 0) {
+                    contentDiv.innerHTML = '<div class="text-red-400 mt-10 font-bold bg-red-900/20 p-4 rounded-xl">لا توجد صفحات مرفوعة لهذا العمل!</div>';
+                    return;
+                }
+
+                contentDiv.innerHTML = '';
+                data.forEach(page => {
+                    contentDiv.innerHTML += `<img src="${page.image_url}" class="w-full h-auto mb-1 border-b border-gray-800" loading="lazy">`;
+                });
+
+            } catch (error) {
+                contentDiv.innerHTML = `<div class="text-red-400 mt-10">خطأ: ${error.message}</div>`;
+            }
+        }
+
+        function closeReader() {
+            document.getElementById('readerModal').classList.add('hidden');
+            document.getElementById('mainAdminScreen').classList.remove('hidden');
+        }
+
+        async function approveManga(id) {
+            if(!confirm('هل تأكدت من المحتوى وتريد نشره للزوار في الصفحة الرئيسية؟')) return;
+            await sbClient.from('mangas').update({ status: 'approved' }).eq('id', id);
+            alert('✅ تم قبول العمل ونشره بنجاح!');
+            loadPendingMangas();
+        }
+
+        async function rejectManga(id) {
+            if(!confirm('هل أنت متأكد من رفض هذا العمل؟ سيتم حذفه نهائياً من قاعدة البيانات.')) return;
+            await sbClient.from('mangas').delete().eq('id', id);
+            alert('🗑️ تم رفض وحذف العمل.');
+            loadPendingMangas();
+        }
+    </script>
+</body>
+</html>
