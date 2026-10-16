@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>إدارة التصنيفات - Futa Arab Admin</title>
+</head>
+<body class="bg-[#0b0c10] text-white min-h-screen p-4 pt-8 flex flex-col items-center">
+
+    <!-- شريط التنقل العلوي -->
+    <div class="w-full max-w-md flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-black text-purple-400">
+            <i class="fas fa-tags mr-2"></i> إدارة التصنيفات
+        </h1>
+        <a href="index.html" class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition active:scale-95">
+            العودة للوحة <i class="fas fa-arrow-left ml-1"></i>
+        </a>
+    </div>
+
+    <div class="bg-[#12141d] p-6 rounded-3xl border border-gray-800 shadow-2xl max-w-md w-full mb-6">
+        <!-- قسم إضافة تاغ جديد -->
+        <h2 class="text-lg font-bold mb-4 text-gray-200">إضافة تصنيف جديد</h2>
+        <div class="flex gap-2">
+            <input id="newTagName" type="text" placeholder="مثال: أكشن، رومانسي..." class="flex-1 bg-[#1a1c23] p-3 rounded-xl border border-gray-700 outline-none text-white focus:border-purple-500 text-sm">
+            <button onclick="addTag()" id="addBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 rounded-xl transition active:scale-95">
+                إضافة
+            </button>
+        </div>
+        
+        <!-- رسائل النظام -->
+        <div id="statusMsg" class="mt-4 text-sm font-bold text-center hidden p-2 rounded-lg"></div>
+    </div>
+
+    <!-- قسم عرض التاغات الحالية -->
+    <div class="bg-[#12141d] p-6 rounded-3xl border border-gray-800 shadow-2xl max-w-md w-full">
+        <h2 class="text-lg font-bold mb-4 text-gray-200 flex justify-between items-center">
+            <span>التصنيفات الحالية</span>
+            <button onclick="fetchTags()" class="text-purple-400 hover:text-purple-300 text-sm"><i class="fas fa-sync-alt"></i> تحديث</button>
+        </h2>
+        
+        <!-- الحاوية التي ستظهر فيها التاغات -->
+        <div id="tagsList" class="space-y-2 max-h-96 overflow-y-auto pr-2 scrollbar-hide">
+            <div class="text-center text-gray-500 text-sm py-4"><i class="fas fa-spinner fa-spin"></i> جاري جلب التصنيفات...</div>
+        </div>
+    </div>
+
+    <script>
+        // مفاتيح Supabase الخاصة بك
+        const supabaseUrl = 'https://vosnoijtrovgtvpxnzsr.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvc25vaWp0cm92Z3R2cHhuenNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMDI0MjUsImV4cCI6MjEwNzU3ODQyNX0.k9B4P5vOMqNKFzpALb2aZrajjeyeKFaJW5qJz0iTqS0';
+        const sbClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        const statusMsg = document.getElementById('statusMsg');
+        const tagsList = document.getElementById('tagsList');
+        const addBtn = document.getElementById('addBtn');
+
+        function showMessage(text, isError = false) {
+            statusMsg.classList.remove('hidden');
+            statusMsg.className = `mt-4 text-sm font-bold text-center p-2 rounded-lg ${isError ? 'bg-red-900/20 text-red-400 border border-red-900' : 'bg-green-900/20 text-green-400 border border-green-900'}`;
+            statusMsg.innerHTML = text;
+            setTimeout(() => statusMsg.classList.add('hidden'), 3000);
+        }
+
+        // 1. جلب وعرض جميع التاغات
+        async function fetchTags() {
+            tagsList.innerHTML = '<div class="text-center text-gray-500 text-sm py-4"><i class="fas fa-spinner fa-spin"></i> جاري التحديث...</div>';
+            
+            try {
+                // جلب البيانات من جدول tags
+                const { data, error } = await sbClient.from('tags').select('*').order('id', { ascending: false });
+                
+                if (error) throw error;
+
+                if (data.length === 0) {
+                    tagsList.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">لا توجد تصنيفات حالياً. أضف واحداً باللأعلى.</div>';
+                    return;
+                }
+
+                tagsList.innerHTML = '';
+                data.forEach(tag => {
+                    const tagEl = document.createElement('div');
+                    tagEl.className = 'flex justify-between items-center bg-[#1a1c23] p-3 rounded-xl border border-gray-800';
+                    tagEl.innerHTML = `
+                        <span class="font-bold text-gray-300">${tag.name}</span>
+                        <button onclick="deleteTag(${tag.id}, '${tag.name}')" class="text-red-500 hover:text-red-400 bg-red-500/10 p-2 rounded-lg transition active:scale-95">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    `;
+                    tagsList.appendChild(tagEl);
+                });
+
+            } catch (error) {
+                tagsList.innerHTML = `<div class="text-center text-red-500 text-sm py-4">خطأ في جلب البيانات: ${error.message}</div>`;
+            }
+        }
+
+        // 2. إضافة تاغ جديد
+        async function addTag() {
+            const input = document.getElementById('newTagName');
+            const tagName = input.value.trim();
+
+            if (!tagName) return showMessage('⚠️ يرجى كتابة اسم التصنيف أولاً!', true);
+
+            addBtn.disabled = true;
+            addBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            try {
+                const { error } = await sbClient.from('tags').insert([{ name: tagName }]);
+                if (error) throw error;
+
+                input.value = '';
+                showMessage('<i class="fas fa-check-circle"></i> تم إضافة التصنيف بنجاح!');
+                fetchTags(); // تحديث القائمة فوراً
+
+            } catch (error) {
+                showMessage(`خطأ: ${error.message}`, true);
+            }
+
+            addBtn.disabled = false;
+            addBtn.innerHTML = 'إضافة';
+        }
+
+        // 3. حذف تاغ
+        async function deleteTag(id, name) {
+            const confirmDelete = confirm(`هل أنت متأكد أنك تريد حذف التصنيف "${name}"؟`);
+            if (!confirmDelete) return;
+
+            try {
+                const { error } = await sbClient.from('tags').delete().eq('id', id);
+                if (error) throw error;
+                
+                showMessage('<i class="fas fa-check-circle"></i> تم الحذف بنجاح!');
+                fetchTags(); // تحديث القائمة فوراً
+            } catch (error) {
+                showMessage(`خطأ في الحذف: ${error.message}`, true);
+            }
+        }
+
+        // تشغيل دالة الجلب عند فتح الصفحة
+        window.onload = fetchTags;
+    </script>
+</body>
+</html>
