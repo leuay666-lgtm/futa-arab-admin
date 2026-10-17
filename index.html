@@ -38,12 +38,10 @@
         </div>
         
         <div class="max-w-md mx-auto p-4 space-y-6">
-            <!-- الغلاف -->
             <div class="flex justify-center">
                 <img id="editCover" src="" class="h-48 w-32 object-cover rounded-xl border border-gray-700 shadow-xl">
             </div>
 
-            <!-- الحقول القابلة للتعديل -->
             <div class="space-y-3 bg-[#12141d] p-4 rounded-2xl border border-gray-800">
                 <div>
                     <label class="text-xs text-gray-400 mb-1 block">العنوان (بالعربية)</label>
@@ -63,24 +61,23 @@
                 </div>
             </div>
 
-            <!-- إدارة التاغات -->
             <div class="bg-[#12141d] p-4 rounded-2xl border border-gray-800">
                 <label class="text-xs text-gray-400 mb-2 block font-bold">تعديل التاغات (التصنيفات)</label>
                 <div id="editTagsContainer" class="flex flex-wrap gap-2"></div>
             </div>
 
-            <!-- إدارة ترتيب الصفحات المحدثة -->
+            <!-- إدارة ترتيب الصفحات -->
             <div class="bg-[#12141d] p-4 rounded-2xl border border-gray-800">
                 <div class="flex justify-between items-center mb-3">
                     <label class="text-xs text-gray-400 font-bold">تعديل ترتيب الصفحات</label>
                     <button onclick="openReader()" class="bg-purple-600/20 text-purple-400 border border-purple-500/30 px-3 py-1 rounded-lg text-xs font-bold active:scale-95"><i class="fas fa-eye"></i> قراءة الفصل</button>
                 </div>
+                <!-- هنا تم تعديل القائمة لمنع صعود شريط التمرير -->
                 <div id="editPagesList" class="space-y-3 max-h-72 overflow-y-auto pr-1">
                     <div class="text-xs text-gray-500 text-center py-2"><i class="fas fa-spinner fa-spin"></i> جاري تحميل الصفحات...</div>
                 </div>
             </div>
 
-            <!-- أزرار القرار النهائي -->
             <div class="flex gap-3 pt-4">
                 <button onclick="saveAndApproveManga()" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold active:scale-95 transition shadow-lg shadow-green-900/50">✅ حفظ ونشر</button>
                 <button onclick="rejectMangaFromReview()" class="flex-1 bg-red-600/20 text-red-500 border border-red-500/30 py-3 rounded-xl font-bold active:scale-95 transition">❌ رفض وحذف</button>
@@ -97,7 +94,6 @@
         <div id="readerContent" class="max-w-md mx-auto flex flex-col items-center pb-10"></div>
     </div>
 
-    <!-- الكود البرمجي -->
     <script>
         const supabaseUrl = 'https://vosnoijtrovgtvpxnzsr.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvc25vaWp0cm92Z3R2cHhuenNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMDI0MjUsImV4cCI6MjEwNzU3ODQyNX0.k9B4P5vOMqNKFzpALb2aZrajjeyeKFaJW5qJz0iTqS0';
@@ -107,6 +103,7 @@
         let currentPageArray = [];
         let allSystemTags = [];
         let currentMangaTags = new Set();
+        let lastModifiedIndex = -1; // متغير لحفظ الصفحة التي تتحرك لتظليلها
 
         window.addEventListener('load', () => {
             loadSystemTags();
@@ -143,6 +140,7 @@
 
         async function openReviewModal(mangaId) {
             currentReviewMangaId = mangaId;
+            lastModifiedIndex = -1; // إعادة تعيين التظليل
             document.getElementById('mainAdminScreen').classList.add('hidden');
             document.getElementById('reviewModal').classList.remove('hidden');
 
@@ -186,22 +184,29 @@
             });
         }
 
-        // التحديث الجديد: إظهار اسم الملف بوضوح لكي تلاحظ التغيير في الترتيب
         function renderPagesList() {
             const listDiv = document.getElementById('editPagesList');
+            const currentScroll = listDiv.scrollTop; // ✨ السحر هنا: حفظ مكان التمرير الحالي
             listDiv.innerHTML = '';
             
             currentPageArray.forEach((page, index) => {
-                // استخراج اسم الملف لتلاحظ حركته عند الضغط على الأسهم
-                const fileName = page.image_url.split('/').pop().substring(0, 15) + '...';
+                // استخراج اسم الملف للتمييز
+                const fileName = page.image_url.split('/').pop().split('?')[0];
+                
+                // تظليل الصفحة التي تحركت للتو
+                const isHighlight = index === lastModifiedIndex;
+                const borderStyle = isHighlight ? 'border-purple-500 bg-purple-900/40 shadow-lg' : 'border-gray-800 bg-[#1a1c23]';
 
                 listDiv.innerHTML += `
-                    <div class="flex items-center gap-3 bg-[#1a1c23] p-2 rounded-xl border border-gray-800 transition-all">
-                        <span class="text-xs font-bold text-white bg-purple-600/30 border border-purple-500/50 rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0">${index + 1}</span>
-                        <img src="${page.image_url}" class="w-12 h-16 object-cover rounded border border-gray-700 flex-shrink-0 bg-gray-900">
+                    <div class="flex items-center gap-3 p-2 rounded-xl border ${borderStyle} transition-all duration-300">
+                        <span class="text-xs font-bold text-white bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">
+                            ${index + 1}
+                        </span>
+                        <img src="${page.image_url}" class="w-12 h-16 object-cover rounded border border-gray-700 flex-shrink-0 bg-black">
                         
-                        <div class="flex-1 overflow-hidden">
-                            <div class="text-[10px] text-gray-400 truncate w-full" dir="ltr">${fileName}</div>
+                        <div class="flex-1 overflow-hidden flex flex-col justify-center">
+                            <span class="text-[10px] font-bold text-gray-300 mb-1">صورة رقم: ${index + 1}</span>
+                            <span class="text-[9px] text-gray-500 truncate w-full" dir="ltr">${fileName}</span>
                         </div>
                         
                         <div class="flex flex-col gap-1 flex-shrink-0">
@@ -214,13 +219,21 @@
                         </div>
                     </div>`;
             });
+
+            listDiv.scrollTop = currentScroll; // ✨ السحر: إعادة شريط التمرير لمكانه
         }
 
         function movePage(index, direction) {
             if (index + direction < 0 || index + direction >= currentPageArray.length) return;
+            
+            // تبديل الأماكن
             const temp = currentPageArray[index];
             currentPageArray[index] = currentPageArray[index + direction];
             currentPageArray[index + direction] = temp;
+            
+            // حفظ مكان الصفحة الجديدة لتظليلها
+            lastModifiedIndex = index + direction;
+            
             renderPagesList(); 
         }
 
@@ -264,10 +277,11 @@
                 };
                 await sbClient.from('mangas').update(mangaUpdates).eq('id', currentReviewMangaId);
 
-                // حفظ الترتيب الجديد في قاعدة البيانات
-                for (let i = 0; i < currentPageArray.length; i++) {
-                    await sbClient.from('manga_pages').update({ page_number: i + 1 }).eq('id', currentPageArray[i].id);
-                }
+                // تسريع الحفظ: حفظ جميع أرقام الصفحات الجديدة في نفس اللحظة
+                const updatePromises = currentPageArray.map((page, i) => {
+                    return sbClient.from('manga_pages').update({ page_number: i + 1 }).eq('id', page.id);
+                });
+                await Promise.all(updatePromises);
 
                 alert('✅ تم التعديل والنشر بنجاح!');
                 closeReviewModal();
