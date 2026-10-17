@@ -6,31 +6,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <title>لوحة مراجعة الآدمن - Futa Arab</title>
+    <title>المراجعة - Futa Arab Admin</title>
 </head>
 <body class="bg-[#0b0c10] text-white min-h-screen p-4 pb-20 relative">
 
-    <!-- 1. الشاشة الرئيسية للوحة التحكم -->
-    <div class="max-w-md mx-auto space-y-8 mt-10" id="mainAdminScreen">
+    <!-- شريط التنقل العلوي -->
+    <div class="max-w-md mx-auto flex gap-2 mb-6">
+        <a href="index.html" class="flex-1 bg-purple-600 text-white text-center py-2 rounded-xl text-xs font-bold shadow-lg shadow-purple-900/50"><i class="fas fa-shield-alt"></i> المراجعة</a>
+        <a href="published.html" class="flex-1 bg-gray-800 text-gray-400 hover:text-white text-center py-2 rounded-xl text-xs font-bold transition"><i class="fas fa-check-circle"></i> المنشور</a>
+        <a href="tags.html" class="flex-1 bg-gray-800 text-gray-400 hover:text-white text-center py-2 rounded-xl text-xs font-bold transition"><i class="fas fa-tags"></i> التاغات</a>
+    </div>
+
+    <!-- الشاشة الرئيسية -->
+    <div class="max-w-md mx-auto space-y-6" id="mainAdminScreen">
         <div class="bg-[#12141d] p-6 rounded-3xl border border-gray-800 shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-2xl font-black flex items-center gap-3 text-red-500">
-                    <i class="fas fa-shield-alt"></i>
-                    لوحة المراجعة
-                </h1>
-                <a href="tags.html" class="bg-purple-600/10 border border-purple-500/30 text-purple-400 hover:bg-purple-600 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-2">
-                    <i class="fas fa-tags"></i> التاغات
-                </a>
-            </div>
-            <div class="h-px w-full bg-gray-800 my-5"></div>
-            <h2 class="text-xl font-bold mb-4 text-orange-400">طلبات رفع جديدة</h2>
-            <div id="pendingList" class="flex flex-col gap-4">
-                <div class="text-center text-gray-500 py-4 text-sm"><i class="fas fa-spinner fa-spin"></i> جاري تحميل الطلبات...</div>
+            <h1 class="text-xl font-black flex items-center gap-3 text-orange-400 mb-4">
+                <i class="fas fa-clock"></i> طلبات بانتظار المراجعة
+            </h1>
+            <div id="pendingList" class="flex flex-col gap-3">
+                <div class="text-center text-gray-500 py-4 text-sm"><i class="fas fa-spinner fa-spin"></i> تحميل...</div>
             </div>
         </div>
     </div>
 
-    <!-- 2. نافذة تفاصيل المراجعة والتعديل -->
+    <!-- نافذة المراجعة والتعديل (مخفية) -->
     <div id="reviewModal" class="fixed inset-0 bg-[#0b0c10] z-40 hidden overflow-y-auto pb-20">
         <div class="sticky top-0 bg-[#12141d] border-b border-gray-800 p-4 flex justify-between items-center z-50 shadow-lg">
             <h2 class="font-bold text-lg text-purple-400 flex items-center gap-2"><i class="fas fa-edit"></i> مراجعة وتعديل العمل</h2>
@@ -38,44 +37,26 @@
         </div>
         
         <div class="max-w-md mx-auto p-4 space-y-6">
-            <div class="flex justify-center">
-                <img id="editCover" src="" class="h-48 w-32 object-cover rounded-xl border border-gray-700 shadow-xl">
-            </div>
-
+            <div class="flex justify-center"><img id="editCover" src="" class="h-48 w-32 object-cover rounded-xl border border-gray-700 shadow-xl"></div>
+            
             <div class="space-y-3 bg-[#12141d] p-4 rounded-2xl border border-gray-800">
-                <div>
-                    <label class="text-xs text-gray-400 mb-1 block">العنوان (بالعربية)</label>
-                    <input id="editTitle" type="text" class="w-full bg-[#1a1c23] p-2 rounded-lg border border-gray-700 text-white text-sm">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-400 mb-1 block">العنوان (بالإنجليزية)</label>
-                    <input id="editTitleEn" type="text" dir="ltr" class="w-full bg-[#1a1c23] p-2 rounded-lg border border-gray-700 text-white text-sm">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-400 mb-1 block">اسم الرافع / المترجم</label>
-                    <input id="editUploader" type="text" class="w-full bg-[#1a1c23] p-2 rounded-lg border border-gray-700 text-white text-sm">
-                </div>
-                <div>
-                    <label class="text-xs text-gray-400 mb-1 block">الوصف / القصة</label>
-                    <textarea id="editDesc" rows="3" class="w-full bg-[#1a1c23] p-2 rounded-lg border border-gray-700 text-white text-sm resize-none"></textarea>
-                </div>
+                <div><label class="text-xs text-gray-400 mb-1 block">العنوان (بالعربية)</label><input id="editTitle" type="text" class="w-full bg-[#1a1c23] p-2 rounded-lg border border-gray-700 text-white text-sm"></div>
+                <div><label class="text-xs text-gray-400 mb-1 block">العنوان (بالإنجليزية)</label><input id="editTitleEn" type="text" dir="ltr" class="w-full bg-[#1a1c23] p-2 rounded-lg border border-gray-700 text-white text-sm"></div>
+                <div><label class="text-xs text-gray-400 mb-1 block">اسم الرافع</label><input id="editUploader" type="text" class="w-full bg-[#1a1c23] p-2 rounded-lg border border-gray-700 text-white text-sm"></div>
+                <div><label class="text-xs text-gray-400 mb-1 block">الوصف</label><textarea id="editDesc" rows="3" class="w-full bg-[#1a1c23] p-2 rounded-lg border border-gray-700 text-white text-sm resize-none"></textarea></div>
             </div>
 
             <div class="bg-[#12141d] p-4 rounded-2xl border border-gray-800">
-                <label class="text-xs text-gray-400 mb-2 block font-bold">تعديل التاغات (التصنيفات)</label>
+                <label class="text-xs text-gray-400 mb-2 block font-bold">التاغات</label>
                 <div id="editTagsContainer" class="flex flex-wrap gap-2"></div>
             </div>
 
-            <!-- إدارة ترتيب الصفحات -->
             <div class="bg-[#12141d] p-4 rounded-2xl border border-gray-800">
                 <div class="flex justify-between items-center mb-3">
-                    <label class="text-xs text-gray-400 font-bold">تعديل ترتيب الصفحات</label>
-                    <button onclick="openReader()" class="bg-purple-600/20 text-purple-400 border border-purple-500/30 px-3 py-1 rounded-lg text-xs font-bold active:scale-95"><i class="fas fa-eye"></i> قراءة الفصل</button>
+                    <label class="text-xs text-gray-400 font-bold">ترتيب الصفحات</label>
+                    <button onclick="openReader()" class="bg-purple-600/20 text-purple-400 border border-purple-500/30 px-3 py-1 rounded-lg text-xs font-bold active:scale-95"><i class="fas fa-eye"></i> قراءة</button>
                 </div>
-                <!-- هنا تم تعديل القائمة لمنع صعود شريط التمرير -->
-                <div id="editPagesList" class="space-y-3 max-h-72 overflow-y-auto pr-1">
-                    <div class="text-xs text-gray-500 text-center py-2"><i class="fas fa-spinner fa-spin"></i> جاري تحميل الصفحات...</div>
-                </div>
+                <div id="editPagesList" class="space-y-3 max-h-72 overflow-y-auto pr-1"></div>
             </div>
 
             <div class="flex gap-3 pt-4">
@@ -85,218 +66,122 @@
         </div>
     </div>
 
-    <!-- 3. نافذة القراءة -->
+    <!-- نافذة القراءة -->
     <div id="readerModal" class="fixed inset-0 bg-[#0b0c10] z-50 hidden overflow-y-auto">
         <div class="sticky top-0 bg-[#12141d] border-b border-gray-800 p-4 flex justify-between items-center z-10">
             <h2 class="font-bold text-lg text-purple-400">معاينة الفصل</h2>
-            <button onclick="closeReader()" class="bg-gray-800 p-2 rounded-lg text-white hover:bg-gray-700 transition active:scale-95"><i class="fas fa-times"></i> إغلاق القارئ</button>
+            <button onclick="closeReader()" class="bg-gray-800 p-2 rounded-lg text-white active:scale-95"><i class="fas fa-times"></i></button>
         </div>
         <div id="readerContent" class="max-w-md mx-auto flex flex-col items-center pb-10"></div>
     </div>
 
     <script>
-        const supabaseUrl = 'https://vosnoijtrovgtvpxnzsr.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvc25vaWp0cm92Z3R2cHhuenNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMDI0MjUsImV4cCI6MjEwNzU3ODQyNX0.k9B4P5vOMqNKFzpALb2aZrajjeyeKFaJW5qJz0iTqS0';
-        let sbClient = supabase.createClient(supabaseUrl, supabaseKey);
+        const sbClient = supabase.createClient('https://vosnoijtrovgtvpxnzsr.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvc25vaWp0cm92Z3R2cHhuenNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMDI0MjUsImV4cCI6MjEwNzU3ODQyNX0.k9B4P5vOMqNKFzpALb2aZrajjeyeKFaJW5qJz0iTqS0');
+        let currentReviewMangaId = null, currentPageArray = [], allSystemTags = [], currentMangaTags = new Set(), lastModifiedIndex = -1;
 
-        let currentReviewMangaId = null;
-        let currentPageArray = [];
-        let allSystemTags = [];
-        let currentMangaTags = new Set();
-        let lastModifiedIndex = -1; // متغير لحفظ الصفحة التي تتحرك لتظليلها
-
-        window.addEventListener('load', () => {
-            loadSystemTags();
-            loadPendingMangas();
-        });
-
-        async function loadSystemTags() {
+        window.onload = async () => {
             const { data } = await sbClient.from('tags').select('name');
             if (data) allSystemTags = data.map(t => t.name);
-        }
+            loadPendingMangas();
+        };
 
         async function loadPendingMangas() {
             const listDiv = document.getElementById('pendingList');
-            const { data, error } = await sbClient.from('mangas').select('*').eq('status', 'pending');
-            
-            if (error) { listDiv.innerHTML = '<div class="text-red-500 text-sm">خطأ في الجلب.</div>'; return; }
-            if (data.length === 0) { listDiv.innerHTML = '<div class="text-center text-gray-500 py-6 bg-[#1a1c23] rounded-xl">لا توجد طلبات معلقة.</div>'; return; }
-
-            listDiv.innerHTML = '';
-            data.forEach(manga => {
-                listDiv.innerHTML += `
-                    <div class="bg-[#1a1c23] p-3 rounded-xl border border-gray-700 flex justify-between items-center">
-                        <div class="flex items-center gap-3">
-                            <img src="${manga.cover_image_url}" class="w-12 h-16 object-cover rounded-md">
-                            <div>
-                                <h3 class="font-bold text-sm text-white">${manga.title}</h3>
-                                <span class="text-[10px] text-gray-400">بواسطة: ${manga.uploader_name || 'مجهول'}</span>
-                            </div>
+            const { data } = await sbClient.from('mangas').select('*').eq('status', 'pending');
+            if (!data || data.length === 0) { listDiv.innerHTML = '<div class="text-center text-gray-500 py-4 bg-[#1a1c23] rounded-xl border border-gray-800">لا توجد طلبات معلقة.</div>'; return; }
+            listDiv.innerHTML = data.map(m => `
+                <div class="bg-[#1a1c23] p-3 rounded-xl border border-gray-700 flex justify-between items-center transition hover:border-purple-500/50">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <img src="${m.cover_image_url}" class="w-12 h-16 object-cover rounded-md flex-shrink-0">
+                        <div class="overflow-hidden">
+                            <h3 class="font-bold text-sm text-white truncate w-32 md:w-48">${m.title}</h3>
+                            <span class="text-[10px] text-gray-400 block truncate">${m.uploader_name || 'مجهول'}</span>
                         </div>
-                        <button onclick="openReviewModal('${manga.id}')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition active:scale-95">مراجعة <i class="fas fa-chevron-left ml-1"></i></button>
-                    </div>`;
-            });
+                    </div>
+                    <button onclick="openReviewModal('${m.id}')" class="bg-purple-600 text-white px-3 py-2 rounded-lg text-xs font-bold active:scale-95 flex-shrink-0">مراجعة <i class="fas fa-chevron-left ml-1"></i></button>
+                </div>`).join('');
         }
 
         async function openReviewModal(mangaId) {
-            currentReviewMangaId = mangaId;
-            lastModifiedIndex = -1; // إعادة تعيين التظليل
+            currentReviewMangaId = mangaId; lastModifiedIndex = -1;
             document.getElementById('mainAdminScreen').classList.add('hidden');
             document.getElementById('reviewModal').classList.remove('hidden');
-
-            try {
-                const { data: mData } = await sbClient.from('mangas').select('*').eq('id', mangaId).single();
-                if(mData) {
-                    document.getElementById('editCover').src = mData.cover_image_url;
-                    document.getElementById('editTitle').value = mData.title || '';
-                    document.getElementById('editTitleEn').value = mData.title_en || '';
-                    document.getElementById('editUploader').value = mData.uploader_name || '';
-                    document.getElementById('editDesc').value = mData.description || '';
-                    
-                    currentMangaTags = new Set(mData.tags ? mData.tags.split(',') : []);
-                    renderEditTags();
-                }
-
-                const { data: pData } = await sbClient.from('manga_pages').select('*').eq('manga_id', mangaId).order('page_number', { ascending: true });
-                if(pData) {
-                    currentPageArray = pData;
-                    renderPagesList();
-                }
-            } catch (err) { alert('خطأ في تحميل التفاصيل!'); }
+            const { data: mData } = await sbClient.from('mangas').select('*').eq('id', mangaId).single();
+            if(mData) {
+                document.getElementById('editCover').src = mData.cover_image_url;
+                document.getElementById('editTitle').value = mData.title || '';
+                document.getElementById('editTitleEn').value = mData.title_en || '';
+                document.getElementById('editUploader').value = mData.uploader_name || '';
+                document.getElementById('editDesc').value = mData.description || '';
+                currentMangaTags = new Set(mData.tags ? mData.tags.split(',') : []);
+                renderEditTags();
+            }
+            const { data: pData } = await sbClient.from('manga_pages').select('*').eq('manga_id', mangaId).order('page_number', { ascending: true });
+            if(pData) { currentPageArray = pData; renderPagesList(); }
         }
 
         function renderEditTags() {
-            const container = document.getElementById('editTagsContainer');
-            container.innerHTML = '';
-            
+            const container = document.getElementById('editTagsContainer'); container.innerHTML = '';
             allSystemTags.forEach(tag => {
-                const btn = document.createElement('button');
-                btn.innerText = tag;
-                btn.className = 'px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ' + 
-                    (currentMangaTags.has(tag) ? 'bg-purple-600 text-white border-purple-500' : 'bg-[#1a1c23] text-gray-400 border-gray-700');
-                
-                btn.onclick = () => {
-                    if (currentMangaTags.has(tag)) currentMangaTags.delete(tag);
-                    else currentMangaTags.add(tag);
-                    renderEditTags();
-                };
+                const btn = document.createElement('button'); btn.innerText = tag;
+                btn.className = 'px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ' + (currentMangaTags.has(tag) ? 'bg-purple-600 text-white border-purple-500' : 'bg-[#1a1c23] text-gray-400 border-gray-700');
+                btn.onclick = () => { currentMangaTags.has(tag) ? currentMangaTags.delete(tag) : currentMangaTags.add(tag); renderEditTags(); };
                 container.appendChild(btn);
             });
         }
 
         function renderPagesList() {
-            const listDiv = document.getElementById('editPagesList');
-            const currentScroll = listDiv.scrollTop; // ✨ السحر هنا: حفظ مكان التمرير الحالي
-            listDiv.innerHTML = '';
-            
+            const listDiv = document.getElementById('editPagesList'); const currentScroll = listDiv.scrollTop; listDiv.innerHTML = '';
             currentPageArray.forEach((page, index) => {
-                // استخراج اسم الملف للتمييز
                 const fileName = page.image_url.split('/').pop().split('?')[0];
-                
-                // تظليل الصفحة التي تحركت للتو
                 const isHighlight = index === lastModifiedIndex;
-                const borderStyle = isHighlight ? 'border-purple-500 bg-purple-900/40 shadow-lg' : 'border-gray-800 bg-[#1a1c23]';
-
+                const borderStyle = isHighlight ? 'border-purple-500 bg-purple-900/40' : 'border-gray-800 bg-[#1a1c23]';
                 listDiv.innerHTML += `
                     <div class="flex items-center gap-3 p-2 rounded-xl border ${borderStyle} transition-all duration-300">
-                        <span class="text-xs font-bold text-white bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">
-                            ${index + 1}
-                        </span>
+                        <span class="text-xs font-bold text-white bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">${index + 1}</span>
                         <img src="${page.image_url}" class="w-12 h-16 object-cover rounded border border-gray-700 flex-shrink-0 bg-black">
-                        
                         <div class="flex-1 overflow-hidden flex flex-col justify-center">
                             <span class="text-[10px] font-bold text-gray-300 mb-1">صورة رقم: ${index + 1}</span>
                             <span class="text-[9px] text-gray-500 truncate w-full" dir="ltr">${fileName}</span>
                         </div>
-                        
                         <div class="flex flex-col gap-1 flex-shrink-0">
-                            <button onclick="movePage(${index}, -1)" class="bg-gray-800 text-white px-3 py-1 rounded-lg hover:bg-purple-600 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition" ${index === 0 ? 'disabled' : ''}>
-                                <i class="fas fa-arrow-up text-xs"></i>
-                            </button>
-                            <button onclick="movePage(${index}, 1)" class="bg-gray-800 text-white px-3 py-1 rounded-lg hover:bg-purple-600 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition" ${index === currentPageArray.length - 1 ? 'disabled' : ''}>
-                                <i class="fas fa-arrow-down text-xs"></i>
-                            </button>
+                            <button onclick="movePage(${index}, -1)" class="bg-gray-800 text-white px-3 py-1 rounded-lg hover:bg-purple-600 active:scale-95 disabled:opacity-30" ${index === 0 ? 'disabled' : ''}><i class="fas fa-arrow-up text-xs"></i></button>
+                            <button onclick="movePage(${index}, 1)" class="bg-gray-800 text-white px-3 py-1 rounded-lg hover:bg-purple-600 active:scale-95 disabled:opacity-30" ${index === currentPageArray.length - 1 ? 'disabled' : ''}><i class="fas fa-arrow-down text-xs"></i></button>
                         </div>
                     </div>`;
             });
-
-            listDiv.scrollTop = currentScroll; // ✨ السحر: إعادة شريط التمرير لمكانه
+            listDiv.scrollTop = currentScroll;
         }
 
         function movePage(index, direction) {
             if (index + direction < 0 || index + direction >= currentPageArray.length) return;
-            
-            // تبديل الأماكن
-            const temp = currentPageArray[index];
-            currentPageArray[index] = currentPageArray[index + direction];
-            currentPageArray[index + direction] = temp;
-            
-            // حفظ مكان الصفحة الجديدة لتظليلها
-            lastModifiedIndex = index + direction;
-            
-            renderPagesList(); 
+            const temp = currentPageArray[index]; currentPageArray[index] = currentPageArray[index + direction]; currentPageArray[index + direction] = temp;
+            lastModifiedIndex = index + direction; renderPagesList(); 
         }
 
         function openReader() {
-            document.getElementById('reviewModal').classList.add('hidden');
-            document.getElementById('readerModal').classList.remove('hidden');
-            const contentDiv = document.getElementById('readerContent');
-            contentDiv.innerHTML = '';
-            currentPageArray.forEach(page => {
-                contentDiv.innerHTML += `<img src="${page.image_url}" class="w-full h-auto mb-1 border-b border-gray-800" loading="lazy">`;
-            });
+            document.getElementById('reviewModal').classList.add('hidden'); document.getElementById('readerModal').classList.remove('hidden');
+            const contentDiv = document.getElementById('readerContent'); contentDiv.innerHTML = '';
+            currentPageArray.forEach(page => contentDiv.innerHTML += `<img src="${page.image_url}" class="w-full h-auto mb-1 border-b border-gray-800" loading="lazy">`);
         }
-
-        function closeReader() {
-            document.getElementById('readerModal').classList.add('hidden');
-            document.getElementById('reviewModal').classList.remove('hidden');
-        }
-
-        function closeReviewModal() {
-            currentReviewMangaId = null;
-            document.getElementById('reviewModal').classList.add('hidden');
-            document.getElementById('mainAdminScreen').classList.remove('hidden');
-            loadPendingMangas();
-        }
+        function closeReader() { document.getElementById('readerModal').classList.add('hidden'); document.getElementById('reviewModal').classList.remove('hidden'); }
+        function closeReviewModal() { currentReviewMangaId = null; document.getElementById('reviewModal').classList.add('hidden'); document.getElementById('mainAdminScreen').classList.remove('hidden'); loadPendingMangas(); }
 
         async function saveAndApproveManga() {
             if(!confirm('هل أنت متأكد من حفظ التعديلات ونشر هذا العمل؟')) return;
-            
-            const btn = event.currentTarget;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
-            btn.disabled = true;
-
+            const btn = event.currentTarget; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...'; btn.disabled = true;
             try {
-                const mangaUpdates = {
-                    title: document.getElementById('editTitle').value.trim(),
-                    title_en: document.getElementById('editTitleEn').value.trim() || null,
-                    uploader_name: document.getElementById('editUploader').value.trim() || 'مجهول',
-                    description: document.getElementById('editDesc').value.trim() || null,
-                    tags: Array.from(currentMangaTags).join(','),
-                    status: 'approved' 
-                };
+                const mangaUpdates = { title: document.getElementById('editTitle').value.trim(), title_en: document.getElementById('editTitleEn').value.trim() || null, uploader_name: document.getElementById('editUploader').value.trim() || 'مجهول', description: document.getElementById('editDesc').value.trim() || null, tags: Array.from(currentMangaTags).join(','), status: 'approved' };
                 await sbClient.from('mangas').update(mangaUpdates).eq('id', currentReviewMangaId);
-
-                // تسريع الحفظ: حفظ جميع أرقام الصفحات الجديدة في نفس اللحظة
-                const updatePromises = currentPageArray.map((page, i) => {
-                    return sbClient.from('manga_pages').update({ page_number: i + 1 }).eq('id', page.id);
-                });
+                const updatePromises = currentPageArray.map((page, i) => sbClient.from('manga_pages').update({ page_number: i + 1 }).eq('id', page.id));
                 await Promise.all(updatePromises);
-
-                alert('✅ تم التعديل والنشر بنجاح!');
-                closeReviewModal();
-            } catch (err) {
-                alert('خطأ في الحفظ: ' + err.message);
-                btn.innerHTML = '✅ حفظ ونشر';
-                btn.disabled = false;
-            }
+                alert('✅ تم التعديل والنشر بنجاح!'); closeReviewModal();
+            } catch (err) { alert('خطأ: ' + err.message); btn.innerHTML = '✅ حفظ ونشر'; btn.disabled = false; }
         }
 
         async function rejectMangaFromReview() {
             if(!confirm('هل أنت متأكد من رفض هذا العمل؟ سيتم حذفه نهائياً.')) return;
-            await sbClient.from('mangas').delete().eq('id', currentReviewMangaId);
-            alert('🗑️ تم رفض وحذف العمل.');
-            closeReviewModal();
+            await sbClient.from('mangas').delete().eq('id', currentReviewMangaId); alert('🗑️ تم الرفض.'); closeReviewModal();
         }
     </script>
 </body>
