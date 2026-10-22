@@ -52,6 +52,16 @@
                 <div><label class="text-xs text-gray-400 mb-1 block">الوصف</label><textarea id="editDesc" rows="3" class="w-full bg-[#1a1c23] p-2 rounded-lg border border-gray-700 text-white text-sm resize-none"></textarea></div>
             </div>
 
+            <!-- قسم تغيير تصنيف/نوع العمل (مانغا ⇄ مانها ⇄ كوميكس) -->
+            <div class="bg-[#12141d] p-4 rounded-2xl border border-gray-800">
+                <label class="text-xs text-gray-400 mb-2.5 block font-bold">تصنيف العمل (مانغا / مانها / كوميكس)</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" id="workTypeBtn_مانغا" onclick="setWorkType('مانغا')" class="py-2.5 rounded-xl text-xs font-black border transition active:scale-95">مانغا</button>
+                    <button type="button" id="workTypeBtn_مانها" onclick="setWorkType('مانها')" class="py-2.5 rounded-xl text-xs font-black border transition active:scale-95">مانها</button>
+                    <button type="button" id="workTypeBtn_كوميكس" onclick="setWorkType('كوميكس')" class="py-2.5 rounded-xl text-xs font-black border transition active:scale-95">كوميكس</button>
+                </div>
+            </div>
+
             <div class="bg-[#12141d] p-4 rounded-2xl border border-gray-800">
                 <label class="text-xs text-gray-400 mb-2 block font-bold">التاغات</label>
                 <div id="editTagsContainer" class="flex flex-wrap gap-2"></div>
@@ -59,14 +69,14 @@
 
             <div class="bg-[#12141d] p-4 rounded-2xl border border-gray-800">
                 <div class="flex justify-between items-center mb-3">
-                    <label class="text-xs text-gray-400 font-bold">ترتيب الصفحات</label>
+                    <label class="text-xs text-gray-400 font-bold">ترتيب وحذف الصفحات (<span id="pagesCountLabel">0</span>)</label>
                     <button onclick="openReader()" class="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-lg text-xs font-bold active:scale-95"><i class="fas fa-eye"></i> قراءة</button>
                 </div>
-                <div id="editPagesList" class="space-y-3 max-h-72 overflow-y-auto pr-1"></div>
+                <div id="editPagesList" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
             </div>
 
             <div class="flex gap-3 pt-4">
-                <button onclick="saveAndApproveManga()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold active:scale-95 transition shadow-lg shadow-blue-900/50">✅ حفظ التعديلات</button>
+                <button onclick="saveAndApproveManga(event)" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold active:scale-95 transition shadow-lg shadow-blue-900/50">✅ حفظ التعديلات</button>
                 <button onclick="rejectMangaFromReview()" class="flex-1 bg-red-600/20 text-red-500 border border-red-500/30 py-3 rounded-xl font-bold active:scale-95 transition">❌ حذف العمل</button>
             </div>
         </div>
@@ -83,7 +93,9 @@
 
     <script>
         const sbClient = supabase.createClient('https://vosnoijtrovgtvpxnzsr.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZvc25vaWp0cm92Z3R2cHhuenNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMDI0MjUsImV4cCI6MjEwNzU3ODQyNX0.k9B4P5vOMqNKFzpALb2aZrajjeyeKFaJW5qJz0iTqS0');
-        let currentReviewMangaId = null, currentPageArray = [], allSystemTags = [], currentMangaTags = new Set(), lastModifiedIndex = -1, allPublishedMangas = [];
+        let currentReviewMangaId = null, currentPageArray = [], deletedPageIds = [], allSystemTags = [], currentMangaTags = new Set(), lastModifiedIndex = -1, allPublishedMangas = [];
+        let selectedWorkType = 'مانغا';
+        const WORK_TYPE_KEYWORDS = ['مانغا', 'مانها', 'مانهوا', 'كوميكس', 'كوميك', 'manga', 'manhwa', 'comics', 'comic'];
 
         window.onload = async () => {
             const { data } = await sbClient.from('tags').select('name');
@@ -91,12 +103,35 @@
             loadAllPublishedMangas();
         };
 
+        function detectMangaWorkType(m) {
+            const raw = ((m.work_type || m.type || m.category || m.tags || '') + '').toLowerCase();
+            if (raw.includes('مانها') || raw.includes('مانهوا') || raw.includes('manhwa')) return 'مانها';
+            if (raw.includes('كوميكس') || raw.includes('كوميك') || raw.includes('comic')) return 'كوميكس';
+            return 'مانغا';
+        }
+
+        function setWorkType(type) {
+            selectedWorkType = type;
+            const styles = {
+                'مانغا':  { active: 'bg-white text-black border-white shadow-lg', inactive: 'bg-[#1a1c23] text-gray-400 border-gray-700' },
+                'مانها':  { active: 'bg-yellow-400 text-black border-yellow-400 shadow-lg', inactive: 'bg-[#1a1c23] text-gray-400 border-gray-700' },
+                'كوميكس': { active: 'bg-red-600 text-white border-red-500 shadow-lg', inactive: 'bg-[#1a1c23] text-gray-400 border-gray-700' }
+            };
+            ['مانغا', 'مانها', 'كوميكس'].forEach(t => {
+                const btn = document.getElementById(`workTypeBtn_${t}`);
+                if (btn) btn.className = `py-2.5 rounded-xl text-xs font-black border transition active:scale-95 ${t === type ? styles[t].active : styles[t].inactive}`;
+            });
+        }
+
         async function loadAllPublishedMangas() {
             const listDiv = document.getElementById('publishedList');
             const { data } = await sbClient.from('mangas').select('*').eq('status', 'approved').order('created_at', { ascending: false });
             allPublishedMangas = data || [];
             
-            if (allPublishedMangas.length === 0) { listDiv.innerHTML = '<div class="text-center text-gray-500 py-4 bg-[#1a1c23] rounded-xl border border-gray-800">لا توجد أعمال منشورة.</div>'; return; }
+            if (allPublishedMangas.length === 0) {
+                listDiv.innerHTML = '<div class="text-center text-gray-500 py-4 bg-[#1a1c23] rounded-xl border border-gray-800">لا توجد أعمال منشورة.</div>';
+                return;
+            }
             renderList(allPublishedMangas);
         }
 
@@ -108,7 +143,7 @@
                         <img src="${m.cover_image_url}" class="w-12 h-16 object-cover rounded-md flex-shrink-0">
                         <div class="overflow-hidden">
                             <h3 class="font-bold text-sm text-white truncate w-32 md:w-48">${m.title}</h3>
-                            <span class="text-[10px] text-gray-400 block truncate">${m.title_en || 'بدون اسم إنجليزي'}</span>
+                            <span class="text-[10px] text-gray-400 block truncate">${detectMangaWorkType(m)} • ${m.title_en || 'بدون اسم إنجليزي'}</span>
                         </div>
                     </div>
                     <button onclick="openReviewModal('${m.id}')" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold active:scale-95 flex-shrink-0"><i class="fas fa-edit"></i> تعديل</button>
@@ -121,27 +156,39 @@
         }
 
         async function openReviewModal(mangaId) {
-            currentReviewMangaId = mangaId; lastModifiedIndex = -1;
+            currentReviewMangaId = mangaId;
+            lastModifiedIndex = -1;
+            deletedPageIds = [];
             document.getElementById('mainAdminScreen').classList.add('hidden');
             document.getElementById('reviewModal').classList.remove('hidden');
+
             const { data: mData } = await sbClient.from('mangas').select('*').eq('id', mangaId).single();
-            if(mData) {
+            if (mData) {
                 document.getElementById('editCover').src = mData.cover_image_url;
                 document.getElementById('editTitle').value = mData.title || '';
                 document.getElementById('editTitleEn').value = mData.title_en || '';
                 document.getElementById('editUploader').value = mData.uploader_name || '';
                 document.getElementById('editDesc').value = mData.description || '';
-                currentMangaTags = new Set(mData.tags ? mData.tags.split(',') : []);
+
+                setWorkType(detectMangaWorkType(mData));
+
+                const rawTags = mData.tags ? mData.tags.split(',').map(s => s.trim()).filter(Boolean) : [];
+                currentMangaTags = new Set(rawTags.filter(t => !WORK_TYPE_KEYWORDS.includes(t.toLowerCase())));
                 renderEditTags();
             }
             const { data: pData } = await sbClient.from('manga_pages').select('*').eq('manga_id', mangaId).order('page_number', { ascending: true });
-            if(pData) { currentPageArray = pData; renderPagesList(); }
+            currentPageArray = pData || [];
+            renderPagesList();
         }
 
         function renderEditTags() {
-            const container = document.getElementById('editTagsContainer'); container.innerHTML = '';
+            const container = document.getElementById('editTagsContainer');
+            container.innerHTML = '';
             allSystemTags.forEach(tag => {
-                const btn = document.createElement('button'); btn.innerText = tag;
+                if (WORK_TYPE_KEYWORDS.includes(tag.trim().toLowerCase())) return;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.innerText = tag;
                 btn.className = 'px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ' + (currentMangaTags.has(tag) ? 'bg-blue-600 text-white border-blue-500' : 'bg-[#1a1c23] text-gray-400 border-gray-700');
                 btn.onclick = () => { currentMangaTags.has(tag) ? currentMangaTags.delete(tag) : currentMangaTags.add(tag); renderEditTags(); };
                 container.appendChild(btn);
@@ -149,7 +196,11 @@
         }
 
         function renderPagesList() {
-            const listDiv = document.getElementById('editPagesList'); const currentScroll = listDiv.scrollTop; listDiv.innerHTML = '';
+            const listDiv = document.getElementById('editPagesList');
+            const currentScroll = listDiv.scrollTop;
+            listDiv.innerHTML = '';
+            document.getElementById('pagesCountLabel').innerText = `${currentPageArray.length} صورة`;
+
             currentPageArray.forEach((page, index) => {
                 const fileName = page.image_url.split('/').pop().split('?')[0];
                 const isHighlight = index === lastModifiedIndex;
@@ -162,9 +213,14 @@
                             <span class="text-[10px] font-bold text-gray-300 mb-1">صورة رقم: ${index + 1}</span>
                             <span class="text-[9px] text-gray-500 truncate w-full" dir="ltr">${fileName}</span>
                         </div>
-                        <div class="flex flex-col gap-1 flex-shrink-0">
-                            <button onclick="movePage(${index}, -1)" class="bg-gray-800 text-white px-3 py-1 rounded-lg hover:bg-blue-600 active:scale-95 disabled:opacity-30" ${index === 0 ? 'disabled' : ''}><i class="fas fa-arrow-up text-xs"></i></button>
-                            <button onclick="movePage(${index}, 1)" class="bg-gray-800 text-white px-3 py-1 rounded-lg hover:bg-blue-600 active:scale-95 disabled:opacity-30" ${index === currentPageArray.length - 1 ? 'disabled' : ''}><i class="fas fa-arrow-down text-xs"></i></button>
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <div class="flex flex-col gap-1">
+                                <button type="button" onclick="movePage(${index}, -1)" class="bg-gray-800 text-white px-2.5 py-1 rounded-lg hover:bg-blue-600 active:scale-95 disabled:opacity-30" ${index === 0 ? 'disabled' : ''}><i class="fas fa-arrow-up text-xs"></i></button>
+                                <button type="button" onclick="movePage(${index}, 1)" class="bg-gray-800 text-white px-2.5 py-1 rounded-lg hover:bg-blue-600 active:scale-95 disabled:opacity-30" ${index === currentPageArray.length - 1 ? 'disabled' : ''}><i class="fas fa-arrow-down text-xs"></i></button>
+                            </div>
+                            <button type="button" onclick="deletePageFromChapter(${index})" title="حذف هذه الصورة من الفصل" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 w-9 h-14 rounded-lg flex items-center justify-center active:scale-95 transition">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
                         </div>
                     </div>`;
             });
@@ -173,33 +229,97 @@
 
         function movePage(index, direction) {
             if (index + direction < 0 || index + direction >= currentPageArray.length) return;
-            const temp = currentPageArray[index]; currentPageArray[index] = currentPageArray[index + direction]; currentPageArray[index + direction] = temp;
-            lastModifiedIndex = index + direction; renderPagesList(); 
+            const temp = currentPageArray[index];
+            currentPageArray[index] = currentPageArray[index + direction];
+            currentPageArray[index + direction] = temp;
+            lastModifiedIndex = index + direction;
+            renderPagesList();
+        }
+
+        // حذف صورة محددة من داخل الفصل المنشور
+        async function deletePageFromChapter(index) {
+            if (currentPageArray.length <= 1) {
+                alert('⚠️ لا يمكن حذف الصورة الوحيدة المتبقية في الفصل!');
+                return;
+            }
+            if (!confirm(`هل أنت متأكد من حذف الصورة رقم (${index + 1}) من هذا الفصل؟`)) return;
+
+            const removedPage = currentPageArray[index];
+            if (removedPage && removedPage.id) {
+                deletedPageIds.push(removedPage.id);
+                await sbClient.from('manga_pages').delete().eq('id', removedPage.id);
+            }
+
+            currentPageArray.splice(index, 1);
+
+            if (index === 0 && currentPageArray.length > 0) {
+                document.getElementById('editCover').src = currentPageArray[0].image_url;
+            }
+            renderPagesList();
         }
 
         function openReader() {
-            document.getElementById('reviewModal').classList.add('hidden'); document.getElementById('readerModal').classList.remove('hidden');
-            const contentDiv = document.getElementById('readerContent'); contentDiv.innerHTML = '';
+            document.getElementById('reviewModal').classList.add('hidden');
+            document.getElementById('readerModal').classList.remove('hidden');
+            const contentDiv = document.getElementById('readerContent');
+            contentDiv.innerHTML = '';
             currentPageArray.forEach(page => contentDiv.innerHTML += `<img src="${page.image_url}" class="w-full h-auto mb-1 border-b border-gray-800" loading="lazy">`);
         }
         function closeReader() { document.getElementById('readerModal').classList.add('hidden'); document.getElementById('reviewModal').classList.remove('hidden'); }
         function closeReviewModal() { currentReviewMangaId = null; document.getElementById('reviewModal').classList.add('hidden'); document.getElementById('mainAdminScreen').classList.remove('hidden'); loadAllPublishedMangas(); }
 
-        async function saveAndApproveManga() {
-            if(!confirm('هل أنت متأكد من حفظ التعديلات على هذا العمل المنشور؟')) return;
-            const btn = event.currentTarget; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...'; btn.disabled = true;
+        async function saveAndApproveManga(e) {
+            if (!confirm('هل أنت متأكد من حفظ التعديلات على هذا العمل المنشور؟')) return;
+            const btn = e ? e.currentTarget : document.querySelector('button[onclick*="saveAndApproveManga"]');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+            btn.disabled = true;
+
             try {
-                const mangaUpdates = { title: document.getElementById('editTitle').value.trim(), title_en: document.getElementById('editTitleEn').value.trim() || null, uploader_name: document.getElementById('editUploader').value.trim() || 'مجهول', description: document.getElementById('editDesc').value.trim() || null, tags: Array.from(currentMangaTags).join(',') };
-                await sbClient.from('mangas').update(mangaUpdates).eq('id', currentReviewMangaId);
-                const updatePromises = currentPageArray.map((page, i) => sbClient.from('manga_pages').update({ page_number: i + 1 }).eq('id', page.id));
+                const finalTagsArray = [selectedWorkType, ...Array.from(currentMangaTags)];
+                const newCoverUrl = currentPageArray.length > 0 ? currentPageArray[0].image_url : document.getElementById('editCover').src;
+
+                const mangaUpdates = {
+                    title: document.getElementById('editTitle').value.trim(),
+                    title_en: document.getElementById('editTitleEn').value.trim() || null,
+                    uploader_name: document.getElementById('editUploader').value.trim() || 'مجهول',
+                    description: document.getElementById('editDesc').value.trim() || null,
+                    tags: finalTagsArray.join(','),
+                    work_type: selectedWorkType,
+                    cover_image_url: newCoverUrl
+                };
+
+                const { error: upErr } = await sbClient.from('mangas').update(mangaUpdates).eq('id', currentReviewMangaId);
+                if (upErr) {
+                    delete mangaUpdates.work_type;
+                    await sbClient.from('mangas').update(mangaUpdates).eq('id', currentReviewMangaId);
+                }
+
+                if (deletedPageIds.length > 0) {
+                    await sbClient.from('manga_pages').delete().in('id', deletedPageIds);
+                }
+
+                const updatePromises = currentPageArray.map((page, i) =>
+                    sbClient.from('manga_pages').update({ page_number: i + 1 }).eq('id', page.id)
+                );
                 await Promise.all(updatePromises);
-                alert('✅ تم التعديل بنجاح!'); closeReviewModal();
-            } catch (err) { alert('خطأ: ' + err.message); btn.innerHTML = '✅ حفظ التعديلات'; btn.disabled = false; }
+
+                alert('✅ تم حفظ التعديلات بنجاح!');
+                btn.innerHTML = '✅ حفظ التعديلات';
+                btn.disabled = false;
+                closeReviewModal();
+            } catch (err) {
+                alert('خطأ: ' + err.message);
+                btn.innerHTML = '✅ حفظ التعديلات';
+                btn.disabled = false;
+            }
         }
 
         async function rejectMangaFromReview() {
-            if(!confirm('تنبيه: سيتم حذف هذا العمل نهائياً من قاعدة البيانات، هل أنت متأكد؟')) return;
-            await sbClient.from('mangas').delete().eq('id', currentReviewMangaId); alert('🗑️ تم الحذف.'); closeReviewModal();
+            if (!confirm('تنبيه: سيتم حذف هذا العمل نهائياً من قاعدة البيانات، هل أنت متأكد؟')) return;
+            await sbClient.from('manga_pages').delete().eq('manga_id', currentReviewMangaId);
+            await sbClient.from('mangas').delete().eq('id', currentReviewMangaId);
+            alert('🗑️ تم الحذف.');
+            closeReviewModal();
         }
     </script>
 </body>
